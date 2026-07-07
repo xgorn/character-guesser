@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Submit Character - Character Guesser</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="logo.svg">
+    <link rel="stylesheet" href="style.css">
+    <script>
+        // Prevent screen flash by applying theme instantly
+        (function() {
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+        })();
+    </script>
+</head>
+<body>
+    <nav>
+        <div class="brand">
+    <a href="index.html">
+        <img src="logo.svg" alt="CG Logo" class="nav-logo">
+        <strong>Character Guesser</strong>
+    </a>
+</div>
+        <div class="nav-links"><a href="index.html">Play</a></div>
+    </nav>
+
+    <div class="game-container" style="margin-top: 80px;">
+        <h2>Submit a Character</h2>
+        <p style="color: var(--text-dim); margin-bottom: 20px;">Help grow the game! Admins will review your submission.</p>
+        
+        <form id="requestForm" onsubmit="submitCharacter(event)">
+            <div class="form-group">
+                <label>Character Name</label>
+                <input type="text" id="name" required>
+            </div>
+            <div class="form-group">
+                <label>Alternative Name (Optional)</label>
+                <input type="text" id="altName">
+            </div>
+            <div class="form-group">
+                <label>Anime / Game Title</label>
+                <input type="text" id="title" required>
+            </div>
+            <div class="form-group">
+                <label>Category</label>
+                <select id="category" required style="width: 100%; padding: 10px; border-radius: 8px; background: var(--bg-darker); color: var(--text-light); border: 1px solid var(--primary);">
+                    <option value="waifu">Waifu (Female)</option>
+                    <option value="husbu">Husbu (Male)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Upload Image (Max 2MB)</label>
+                <input type="file" id="image" accept="image/*" required>
+            </div>
+
+            <button type="submit" style="width: 100%; margin-top: 10px;">Submit for Review</button>
+        </form>
+        <p id="requestMessage"></p>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="app.js"></script>
+
+    <script>
+
+        if (!localStorage.getItem('token')) {
+            window.location.href = 'auth.html';
+        }
+
+        async function submitCharacter(e) {
+            e.preventDefault();
+            const file = document.getElementById('image').files[0];
+            const msgEl = document.getElementById('requestMessage');
+
+            // 1. Strict File Size Validation (2MB)
+            if (file.size > 2 * 1024 * 1024) {
+                msgEl.style.color = 'var(--danger)';
+                msgEl.innerText = "File is too large! Please keep it under 2MB.";
+                return;
+            }
+
+            // 2. Convert to Base64
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = async () => {
+                const payload = {
+                    name: document.getElementById('name').value,
+                    alternativeName: document.getElementById('altName').value,
+                    title: document.getElementById('title').value,
+                    category: document.getElementById('category').value,
+                    imageBase64: reader.result
+                };
+
+                // Use standard fetch if you haven't moved fetchWithAuth globally yet
+                const token = localStorage.getItem('token');
+                const res = await fetchWithAuth('/api/request/submit', {
+                    method: 'POST',
+                    headers: { 
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json' 
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await res.json();
+                
+                if (res.ok) {
+                    msgEl.style.color = 'var(--success)';
+                    msgEl.innerText = data.message;
+                    document.getElementById('requestForm').reset();
+                } else {
+                    msgEl.style.color = 'var(--danger)';
+                    msgEl.innerText = data.message;
+                }
+            };
+        }
+    </script>
+</body>
+</html>

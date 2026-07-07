@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Background -->
+  <rect width="100" height="100" rx="22" fill="#1a1a24" />
+  
+  <!-- Outer border -->
+  <rect width="96" height="96" x="2" y="2" rx="20" fill="none" stroke="#6366f1" stroke-width="2" opacity="0.5"/>
+  
+  <!-- "CG" Text -->
+  <text x="50" y="68" font-family="system-ui, -apple-system, sans-serif" font-size="48" font-weight="900" text-anchor="middle">
+    <tspan fill="#6366f1">C</tspan><tspan fill="#ec4899">G</tspan>
+  </text>
+  
+  <!-- Accent Dot (Golden/Warning color) -->
+  <circle cx="76" cy="24" r="6" fill="#f59e0b" />
+</svg>

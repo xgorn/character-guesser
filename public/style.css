@@ -1,0 +1,479 @@
+:root {
+    --bg-dark: #0a0a0f;
+    --bg-darker: #070709;
+    --bg-card: #090909;
+    --bg-card-hover: #25252b;
+    --primary: #747481;
+    --primary-light: #e5e5e5;
+    --secondary: #f59e0b;
+    --accent: #ec4899;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --text-light: #f8fafc;
+    --text-muted: #94a3b8;
+    --text-dim: #64748b;
+    --gradient-card: linear-gradient(145deg, var(--bg-card) 0%, rgba(26, 26, 36, 0.8) 100%);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    --shadow-glow: 0 0 30px rgb(129 129 129 / 30%);
+    --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+
+/* =========================================
+   🌗 LIGHT MODE OVERRIDES
+   ========================================= */
+[data-theme="light"] {
+    --bg-dark: #f3f4f6;       /* Main background: Light gray */
+    --bg-darker: #f0f0f0;     /* Cards/Panels: Pure white */
+    --primary: #8d8d8d;       /* Primary color: Dark slate */
+    --primary-light: #b4b4b4;
+    --bg-card: #f9fafb;       /* Card background: Slightly off-white */
+    --bg-card-hover: #e5e7eb; /* Hover states */
+    --text-light: #252525;    /* Main text: Dark slate (replaces white) */
+    --text-dim: #4b5563;      /* Secondary text: Medium gray */
+    --text-muted: #6b7280;    /* Muted text */
+    --gradient-card: #ffffff; /* Remove the dark gradient on cards */
+    --shadow-glow: 0 4px 15px rgba(0, 0, 0, 0.05); /* Softer shadow */
+}
+
+/* Floating Theme Toggle Button */
+.theme-toggle-fab {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: var(--bg-darker);
+    border: 2px solid var(--primary);
+    font-size: 1.5rem;
+    box-shadow: var(--shadow-lg);
+    cursor: pointer;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform var(--animation-fast, 0.2s);
+}
+
+.theme-toggle-fab:hover {
+    transform: scale(1.1);
+    border-color: var(--accent);
+}
+
+
+body {
+    background-color: var(--bg-dark);
+    color: var(--text-light);
+    font-family: var(--font-sans);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start; /* THIS FIXES IT */
+    min-height: 100vh;
+    margin: 0;
+    
+}
+
+.game-container {
+    background: var(--gradient-card);
+    padding: 2rem;
+    border-radius: 15px;
+    box-shadow: var(--shadow-lg), var(--shadow-glow);
+    text-align: center;
+    max-width: 500px;
+    width: 100%;
+    margin-top: 300px;
+}
+
+canvas#characterCanvas {
+    width: 100%;
+    max-width: 300px;
+    border-radius: 10px;
+    margin: 20px 0;
+    pointer-events: none; /* Prevents dragging and right-clicking */
+    filter: drop-shadow(0 0 10px rgba(0,0,0,0.5));
+}
+
+input[type="text"] {
+    background-color: var(--bg-darker);
+    border: 1px solid var(--primary);
+    color: var(--text-light);
+    padding: 10px 15px;
+    border-radius: 8px;
+    width: 70%;
+    outline: none;
+}
+
+button {
+    width: 100%;
+    margin-top: 10px;
+    background-color: var(--primary);
+    color: var(--text-light);
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: 0.3s;
+}
+
+button:hover {
+    background-color: var(--primary-light);
+    box-shadow: var(--shadow-glow);
+}
+
+button[onclick="performSearch()"] {
+    width: auto;
+    margin-top: 0;
+}
+
+#timer {
+    color: var(--success);
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin-top: 10px;
+}
+
+/* --- Navigation Bar --- */
+nav {
+    width: 100%;
+    background: var(--bg-card);
+    padding: 1rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: var(--shadow-md);
+    position: fixed;
+    top: 0;
+    z-index: 100;
+    box-sizing: border-box;
+}
+
+nav a {
+    color: var(--text-light);
+    text-decoration: none;
+    margin: 0 15px;
+    font-weight: bold;
+    transition: var(--animation-fast);
+}
+
+nav a:hover {
+    color: var(--primary-light);
+}
+
+.nav-links { display: flex; align-items: center; }
+
+
+/* =========================================
+   ✨ BEAUTIFUL FORM INPUTS
+   ========================================= */
+.form-group {
+    margin-bottom: 1.5rem;
+    text-align: left;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--text-light);
+    font-weight: bold;
+    font-size: 0.95rem;
+    letter-spacing: 0.5px;
+}
+
+/* Target all the input types you use */
+input[type="text"],
+input[type="password"],
+input[type="url"],
+select {
+    width: 100%;
+    padding: 14px 16px; /* Thick, comfortable padding */
+    background-color: var(--bg-darker);
+    color: var(--text-light);
+    border: 2px solid var(--bg-card-hover); /* Subtle default border */
+    border-radius: 10px; /* Modern rounded corners */
+    font-size: 1rem;
+    font-family: inherit;
+    outline: none;
+    transition: all 0.3s ease;
+    box-sizing: border-box;
+}
+
+/* Make the placeholder text blend in nicely */
+input::placeholder {
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+/* The Magic Glow - When the user clicks the input */
+input:focus,
+select:focus {
+    border-color: var(--primary); /* Changes to your neon purple/blue */
+    background-color: var(--bg-dark); /* Slightly darkens the inside */
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15); /* Soft glowing ring */
+    transform: translateY(-1px); /* Tiny lift effect */
+}
+
+.form-group input, .form-group input[type="file"] {
+    width: 100%;
+    box-sizing: border-box;
+    margin: 0;
+}
+
+/* =========================================
+   📁 BEAUTIFUL FILE UPLOADS
+   ========================================= */
+input[type="file"] {
+    width: 100%;
+    padding: 10px; 
+    background-color: var(--bg-darker);
+    color: var(--text-muted); /* The color of the "No file chosen" text */
+    border: 2px dashed var(--bg-card-hover); /* Dashed border looks great for uploads */
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 0.95rem;
+    outline: none;
+    transition: all 0.3s ease;
+    box-sizing: border-box;
+    cursor: pointer;
+}
+
+/* Glow effect when hovering over the upload zone */
+input[type="file"]:hover,
+input[type="file"]:focus {
+    border-color: var(--primary);
+    background-color: var(--bg-dark);
+}
+
+/* 🎨 The Magic: Styling the internal "Choose File" button */
+input[type="file"]::file-selector-button {
+    margin-right: 15px;
+    padding: 8px 16px;
+    background-color: var(--bg-card-hover); 
+    color: var(--text-light);
+    border: 1px solid var(--primary);
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+/* Button hover effect */
+input[type="file"]::file-selector-button:hover {
+    background-color: var(--primary);
+    color: #ffffff;
+    transform: translateY(-1px);
+}
+
+
+/* --- Tables (Leaderboard) --- */
+.table-container {
+    background: var(--bg-card);
+    border-radius: 10px;
+    padding: 20px;
+    width: 100%;
+    max-width: 600px;
+    margin-top: 80px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--bg-darker);
+}
+
+th { color: var(--primary-light); }
+td a { color: var(--secondary); text-decoration: none; font-weight: bold; }
+td a:hover { text-decoration: underline; }
+
+/* --- Profile character Grid --- */
+.character-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.character-card {
+    background: var(--bg-darker);
+    border-radius: 8px;
+    padding: 10px;
+    text-align: center;
+    border: 1px solid var(--primary);
+}
+
+.character-card img {
+    width: 100%;
+    border-radius: 5px;
+    aspect-ratio: 1/1;
+    object-fit: cover;
+}
+
+.character-card p {
+    margin: 5px 0 0 0;
+    font-size: 0.9rem;
+    color: var(--text-light);
+}
+
+/* --- Global Announcement Banner --- */
+.announcement-banner {
+    position: fixed;
+    top: 90px; /* Sits just under the navbar */
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: var(--success);
+    color: white;
+    padding: 15px 30px;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    box-shadow: var(--shadow-lg);
+    z-index: 1000;
+    opacity: 1;
+    transition: opacity 0.5s ease, top 0.5s ease;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.announcement-banner.hidden {
+    opacity: 0;
+    top: 70px;
+    pointer-events: none;
+}
+
+/* --- Updated Canvas Size Logic --- */
+canvas#characterCanvas {
+    /* Visual display size on the screen */
+    width: 100%; 
+    max-width: 300px; /* Keeps the UI clean; adjust this if you want it larger on screen */
+    height: auto; /* Forces the browser to visually respect the aspect ratio */
+    
+    /* Styling */
+    border-radius: 10px;
+    margin: 20px auto;
+    display: block; 
+    
+    /* Anti-bot/Anti-cheat display protections */
+    pointer-events: none; /* Prevents dragging and right-clicking */
+    user-select: none;
+    -webkit-user-select: none;
+    
+    filter: drop-shadow(0 0 10px rgba(0,0,0,0.5));
+}
+
+
+/* --- Logo Styles --- */
+.brand a {
+    display: flex;
+    align-items: center;
+    gap: 10px; /* Space between logo and text */
+}
+
+.nav-logo {
+    height: 32px;
+    width: 32px;
+    border-radius: 8px;
+    box-shadow: var(--shadow-sm);
+    transition: transform var(--animation-fast);
+}
+
+.brand a:hover .nav-logo {
+    transform: scale(1.1); /* Logo slightly pops out when hovered */
+}
+
+
+/* =========================================
+   📱 MOBILE RESPONSIVE LAYOUT (Phones & Tablets)
+   ========================================= */
+@media (max-width: 768px) {
+    
+    /* 1. Stack the Navigation Bar */
+    nav {
+        flex-direction: column;
+        padding: 0.8rem;
+        position: relative; /* Unfix it on mobile so it doesn't cover content */
+    }
+
+    .nav-links {
+        margin-top: 10px;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px;
+    }
+
+    .nav-links a {
+        margin: 0 5px;
+        font-size: 0.9rem;
+    }
+
+    /* 2. Adjust Game Containers & Margins */
+    .game-container {
+        padding: 1.5rem;
+        width: 92%; /* Give it a little breathing room on the edges */
+        box-sizing: border-box;
+
+        /* ADD THIS LINE to push it down below the taller navbar */
+        margin-top: 220px;
+    }
+
+    /* 3. Make Inputs and Butons Full Width for "Fat Fingers" */
+    input[type="text"], 
+    input[type="url"], 
+    input[type="password"],
+    select {
+        width: 100% !important; 
+        box-sizing: border-box;
+    }
+
+    button {
+        width: 100%;
+        margin-top: 10px;
+        padding: 12px; /* Slightly larger tap target */
+    }
+
+    /* 4. Fix the Leaderboard Table */
+    /* Tables naturally stretch beyond the screen. This allows scrolling horizontally */
+    .table-container {
+        margin-top: 20px !important;
+        width: 92%;
+        overflow-x: auto; 
+        padding: 10px;
+    }
+
+    /* 5. Adjust the Character Showcase Grid */
+    .character-grid {
+        /* Drop the minimum width slightly so at least 2 fit side-by-side on tiny phones */
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+        gap: 10px;
+    }
+
+    .character-card p {
+        font-size: 0.8rem;
+    }
+
+    /* 6. Stack the Character Wiki Page */
+    #characterHeader {
+        flex-direction: column !important;
+        align-items: center !important;
+        text-align: center;
+    }
+
+    #characterHeader img {
+        width: 100% !important; /* Let it fill the mobile container nicely */
+        max-width: 300px !important;
+        margin-bottom: 15px;
+    }
+
+    /* 7. Global Search Bar Layout */
+    /* If you wrapped your search input and button in a flex container, stack them */
+    div[style*="display: flex; gap: 10px; margin-bottom: 20px;"] {
+        flex-direction: column;
+    }
+}

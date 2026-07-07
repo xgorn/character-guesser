@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Edit Character - Character Guesser</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="logo.svg"> 
+    <link rel="stylesheet" href="style.css">
+    <script>
+        // Prevent screen flash by applying theme instantly
+        (function() {
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+        })();
+    </script>
+</head>
+<body>
+    <nav>
+        <div class="brand">
+            <a href="index.html">
+                <img src="logo.svg" alt="CG Logo" class="nav-logo">
+                <strong>Character Guesser</strong>
+            </a>
+        </div>
+        <div class="nav-links"><a href="index.html">Play</a></div>
+    </nav>
+
+    <div class="game-container" style="margin-top: 80px;">
+        <h2>Edit Character</h2>
+        
+        <form id="editForm" onsubmit="updateCharacter(event)" style="display: none;">
+            <div class="form-group">
+                <label>Character Name</label>
+                <input type="text" id="name" required>
+            </div>
+            <div class="form-group">
+                <label>Alternative Name (Optional)</label>
+                <input type="text" id="altName">
+            </div>
+            <div class="form-group">
+                <label>Anime / Game Title</label>
+                <input type="text" id="title" required>
+            </div>
+            <div class="form-group">
+                <label>Category</label>
+                <select id="category" required style="width: 100%; padding: 10px; border-radius: 8px; background: var(--bg-darker); color: var(--text-light); border: 1px solid var(--primary);">
+                    <option value="waifu">Waifu (Female)</option>
+                    <option value="husbu">Husbu (Male)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Upload New Cover Image (Leave blank to keep current image)</label>
+                <input type="file" id="image" accept="image/*"> </div>
+
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <button type="submit" style="flex: 1; background: var(--success);">Save Changes</button>
+                <button type="button" id="cancelBtn" style="flex: 1; background: var(--bg-darker);">Cancel</button>
+            </div>
+        </form>
+        
+        <p id="editMessage">Loading character data...</p>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="app.js"></script>
+    <script>
+
+        // Kick them out if not admin
+        if (localStorage.getItem('isAdmin') !== 'true') window.location.href = 'index.html';
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const characterId = urlParams.get('id');
+
+        // Allow canceling and returning to the character page
+        document.getElementById('cancelBtn').onclick = () => {
+            window.location.href = `character.html?id=${characterId}`;
+        };
+
+        // 1. Fetch existing data and populate the form
+        async function loadCharacterData() {
+            if (!characterId) return document.getElementById('editMessage').innerText = "No ID provided.";
+
+            const res = await fetchWithAuth(`/api/character/${characterId}`);
+            if (!res.ok) return document.getElementById('editMessage').innerText = "Character not found.";
+
+            const data = await res.json();
+            const char = data.character;
+
+            document.getElementById('name').value = char.name;
+            document.getElementById('altName').value = char.alternativeName || "";
+            document.getElementById('title').value = char.title;
+            document.getElementById('category').value = char.category;
+
+            document.getElementById('editForm').style.display = 'block';
+            document.getElementById('editMessage').innerText = "";
+        }
+
+        // 2. Submit the edited data
+        async function updateCharacter(e) {
+            e.preventDefault();
+            const file = document.getElementById('image').files[0];
+            const msgEl = document.getElementById('editMessage');
+
+            // Gather text data
+            const payload = {
+                name: document.getElementById('name').value,
+                alternativeName: document.getElementById('altName').value,
+                title: document.getElementById('title').value,
+                category: document.getElementById('category').value
+            };
+
+            const sendUpdateReq = async () => {
+                msgEl.style.color = "var(--text-light)";
+                msgEl.innerText = "Saving changes...";
+
+                const token = localStorage.getItem('token');
+                const res = await fetch(`/api/admin/edit-character/${characterId}`, {
+                    method: 'PUT', // Using PUT for updates
+                    headers: { 
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json' 
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await res.json();
+                if (res.ok) {
+                    msgEl.style.color = 'var(--success)';
+                    msgEl.innerText = "Saved! Redirecting...";
+                    setTimeout(() => window.location.href = `character.html?id=${characterId}`, 1500);
+                } else {
+                    msgEl.style.color = 'var(--danger)';
+                    msgEl.innerText = data.message;
+                }
+            };
+
+            // If they uploaded a new image, convert it to Base64 first
+            if (file) {
+                if (file.size > 2 * 1024 * 1024) {
+                    return msgEl.innerText = "File is too large! Please keep it under 2MB.";
+                }
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => {
+                    payload.imageBase64 = reader.result;
+                    sendUpdateReq();
+                };
+            } else {
+                // If no image uploaded, just send the text update
+                sendUpdateReq();
+            }
+        }
+
+        window.onload = loadCharacterData;
+    </script>
+</body>
+</html>

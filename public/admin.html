@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin - Character Guesser</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="logo.svg">
+    <link rel="stylesheet" href="style.css">
+    <script>
+        // Prevent screen flash by applying theme instantly
+        (function() {
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+        })();
+    </script>
+</head>
+<body>
+    <nav>
+        <div class="brand">
+    <a href="index.html">
+        <img src="logo.svg" alt="CG Logo" class="nav-logo">
+        <strong>Character Guesser</strong>
+    </a>
+</div>
+        <div class="nav-links">
+            <a href="index.html">Play</a>
+            <a href="#" onclick="logout()">Logout</a>
+        </div>
+    </nav>
+
+    <div class="game-container" style="margin-top: 80px;">
+        <h2>Pending Submissions</h2>
+        <div id="requestList" style="display: flex; flex-direction: column; gap: 15px;">
+            </div>
+        <hr style="border: 1px solid var(--bg-darker); margin: 30px 0;">
+        <h2>Add New Character</h2>
+        <hr style="border: 1px solid var(--bg-darker); margin: 30px 0;">
+
+        <form id="adminForm" onsubmit="addCharacter(event)">
+            <div class="form-group">
+                <label>Character Name</label>
+                <input type="text" id="name" required>
+            </div>
+            <div class="form-group">
+                <label>Alternative Name (Optional)</label>
+                <input type="text" id="altName">
+            </div>
+            <div class="form-group">
+                <label>Anime / Game Title</label>
+                <input type="text" id="title" required>
+            </div>
+            <div class="form-group">
+                <label>Category</label>
+                <select id="category" required style="width: 100%; padding: 10px; border-radius: 8px; background: var(--bg-darker); color: var(--text-light); border: 1px solid var(--primary);">
+                    <option value="waifu">Waifu (Female)</option>
+                    <option value="husbu">Husbu (Male)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Upload Image</label>
+                <input type="file" id="image" accept="image/*" required>
+            </div>
+
+            <button type="submit" style="width: 100%; margin-top: 10px;">Upload Character</button>
+        </form>
+        <p id="adminMessage"></p>
+
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="app.js"></script>
+    <script>
+
+        if (localStorage.getItem('isAdmin') !== 'true') window.location.href = 'index.html';
+
+        async function addCharacter(e) {
+            e.preventDefault();
+            const token = localStorage.getItem('token');
+            const file = document.getElementById('image').files[0];
+
+            // Convert file to Base64
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = async () => {
+                const base64String = reader.result; // This is the data:image/png;base64,... string
+
+                const payload = {
+                    name: document.getElementById('name').value,
+                    alternativeName: document.getElementById('altName').value,
+                    title: document.getElementById('title').value,
+                    category: document.getElementById('category').value,
+                    imageBase64: base64String
+                };
+
+                const res = await fetchWithAuth('/api/admin/add-character', {
+                    method: 'POST',
+                    headers: { 
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json' 
+                    },
+                    body: JSON.stringify(payload) 
+                });
+
+                const data = await res.json();
+                const msgEl = document.getElementById('adminMessage');
+                msgEl.style.color = res.ok ? 'var(--success)' : 'var(--danger)';
+                msgEl.innerText = data.message;
+                if(res.ok) document.getElementById('adminForm').reset();
+            };
+        }
+        function logout() { localStorage.clear(); window.location.href = 'index.html'; }
+
+        async function loadRequests() {
+            const token = localStorage.getItem('token');
+            const res = await fetchWithAuth('/api/admin/requests', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            
+            if (!res.ok) return;
+            const requests = await res.json();
+            const list = document.getElementById('requestList');
+            list.innerHTML = '';
+
+            if (requests.length === 0) {
+                list.innerHTML = '<p style="color: var(--text-dim);">No pending requests.</p>';
+                return;
+            }
+
+            requests.forEach(req => {
+                const card = document.createElement('div');
+                card.style.cssText = "background: var(--bg-darker); padding: 15px; border-radius: 8px; border: 1px solid var(--primary); text-align: left;";
+                
+                card.innerHTML = `
+                    <div style="display: flex; gap: 15px; align-items: center;">
+                        <img src="${req.imageBase64}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 5px;">
+                        <div>
+                            <h3 style="margin: 0; color: var(--text-light);">${req.name}</h3>
+                            <p style="margin: 5px 0; font-size: 0.9rem; color: var(--text-dim);">${req.title} (${req.category})</p>
+                            <p style="margin: 0; font-size: 0.8rem; color: var(--secondary);">Submitted by: ${req.submittedBy}</p>
+                            <div style="margin-top: 10px;">
+                                <button onclick="reviewRequest('${req._id}', 'approve')" style="background: var(--success); padding: 5px 10px;">Approve</button>
+                                <button onclick="reviewRequest('${req._id}', 'reject')" style="background: var(--danger); padding: 5px 10px;">Reject</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                list.appendChild(card);
+            });
+        }
+
+        async function reviewRequest(id, action) {
+            const token = localStorage.getItem('token');
+            const res = await fetchWithAuth(`/api/admin/requests/${id}/${action}`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (res.ok) {
+                loadRequests(); // Refresh the list
+                alert(`Character ${action}d successfully!`);
+            }
+        }
+
+        // Call this when the admin page loads
+        window.onload = () => {
+            loadRequests();
+        };
+    </script>
+</body>
+</html>

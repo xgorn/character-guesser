@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Character Info - Character Guesser</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="logo.svg">
+    <link rel="stylesheet" href="style.css">
+    <script>
+        // Prevent screen flash by applying theme instantly
+        (function() {
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+        })();
+    </script>
+</head>
+<body>
+    <nav>
+        <div class="brand">
+    <a href="index.html">
+        <img src="logo.svg" alt="CG Logo" class="nav-logo">
+        <strong>Character Guesser</strong>
+    </a>
+</div>
+        <div class="nav-links" id="navLinks">
+            <a href="leaderboard.html">Leaderboard</a>
+        </div>
+    </nav>
+
+    <div class="game-container" style="margin-top: 80px; max-width: 800px; text-align: left;">
+        
+        <div id="characterHeader" style="display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap;">
+            <p>Loading character data...</p>
+        </div>
+
+        <hr style="border: 1px solid var(--bg-darker); margin: 30px 0;">
+
+        <h2 style="color: var(--primary-light);">Guessed By</h2>
+        <p id="guessCount" style="color: var(--text-dim); margin-top: -10px;"></p>
+        
+        <div class="table-container" style="margin-top: 10px; max-width: 100%;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Username</th>
+                        <th>Total Score</th>
+                    </tr>
+                </thead>
+                <tbody id="guessersList">
+                    </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="app.js"></script> 
+    
+    <script>
+
+        async function loadCharacter() {
+            // Get character ID from the URL (e.g., character.html?id=12345)
+            const urlParams = new URLSearchParams(window.location.search);
+            const characterId = urlParams.get('id');
+
+            if (!characterId) {
+                document.getElementById('characterHeader').innerHTML = "<h3>Character not found.</h3>";
+                return;
+            }
+
+            const res = await fetchWithAuth(`/api/character/${characterId}`);
+            if (!res.ok) {
+                document.getElementById('characterHeader').innerHTML = "<h3>Character not found.</h3>";
+                return;
+            }
+
+            const data = await res.json();
+            const char = data.character;
+            const guessers = data.guessers;
+
+            // 1. Render Character Info
+            const altNameHtml = char.alternativeName ? `<p style="color: var(--text-muted); font-style: italic;">aka ${char.alternativeName}</p>` : '';
+            
+            // NEW: Only show the button if the user is logged in
+            const token = localStorage.getItem('token');
+            const favoriteBtnHtml = token ? 
+                `<button onclick="toggleFavorite('${char._id}')" style="margin-top: 15px; background: var(--bg-card-hover); border: 1px solid var(--accent); color: var(--text-light);">
+                    ❤️ Toggle Favorite
+                </button>` : '';
+
+            // NEW: Check if Admin to show Edit Button
+            const isAdmin = localStorage.getItem('isAdmin') === 'true';
+            const editBtnHtml = isAdmin ? 
+                `<a href="admin-edit.html?id=${char._id}" style="margin-top: 15px; margin-left: 10px; display: inline-block; background: var(--bg-card-hover); border: 1px solid var(--warning); color: var(--warning); padding: 5px 15px; text-decoration: none; border-radius: 5px;">
+                    ✏️ Edit Character
+                </a>` : '';
+
+            document.getElementById('characterHeader').innerHTML = `
+                <img src="/api/image/${char._id}" alt="${char.name}" style="width: 250px; max-width: 100%; border-radius: 10px; border: 2px solid var(--primary); box-shadow: var(--shadow-lg);">
+                <div>
+                    <h1 style="margin: 0; color: var(--text-light); font-size: 2.5rem;">${char.name}</h1>
+                    ${altNameHtml}
+                    <h3 style="color: var(--secondary); margin-top: 5px;">${char.title}</h3>
+                    <span style="background: var(--bg-darker); padding: 5px 15px; border-radius: 20px; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; color: ${char.category === 'waifu' ? 'var(--accent)' : 'var(--primary)'}; border: 1px solid ${char.category === 'waifu' ? 'var(--accent)' : 'var(--primary)'};">
+                        ${char.category}
+                    </span>
+                    <br>
+                    ${favoriteBtnHtml}
+                    ${editBtnHtml}
+                </div>
+            `;
+
+            // 2. Render Guessers List
+            const list = document.getElementById('guessersList');
+            document.getElementById('guessCount').innerText = `${guessers.length} players have guessed this character.`;
+
+            if (guessers.length === 0) {
+                list.innerHTML = '<tr><td colspan="2" style="text-align: center; color: var(--text-dim);">No one has guessed this character yet! Be the first!</td></tr>';
+                return;
+            }
+
+            guessers.forEach(user => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><a href="profile.html?user=${user.username}">${user.username}</a></td>
+                    <td>${user.score}</td>
+                `;
+                list.appendChild(tr);
+            });
+        }
+
+        window.onload = () => {
+            // Re-trigger your existing app.js window.onload to keep the navbar working
+            if (typeof window.onloadApp === 'function') window.onloadApp();
+            loadCharacter();
+        };
+
+        async function toggleFavorite(characterId) {
+            const token = localStorage.getItem('token');
+            if (!token) return alert("Please log in first!");
+
+            const res = await fetchWithAuth('/api/user/toggle-favorite', {
+                method: 'POST',
+                headers: { 
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json' 
+                },
+                body: JSON.stringify({ characterId })
+            });
+
+            const data = await res.json();
+            
+            if (res.ok) {
+                alert(data.message); // "Added to favorites!" or "Removed from favorites."
+            } else {
+                alert(data.message); // Shows error if they try to add a 6th, or haven't guessed it yet
+            }
+        }
+    </script>
+</body>
+</html>

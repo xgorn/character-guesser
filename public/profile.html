@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Profile - Character Guesser</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="logo.svg">
+    <link rel="stylesheet" href="style.css">
+    <script>
+        // Prevent screen flash by applying theme instantly
+        (function() {
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+        })();
+    </script>
+</head>
+<body>
+    <nav>
+        <div class="brand">
+    <a href="index.html">
+        <img src="logo.svg" alt="CG Logo" class="nav-logo">
+        <strong>Character Guesser</strong>
+    </a>
+</div>
+        <div class="nav-links"><a href="leaderboard.html">Leaderboard</a></div>
+    </nav>
+
+    <div class="game-container" style="margin-top: 80px; max-width: 800px;">
+        <h2 id="profileName">Loading Profile...</h2>
+        <p id="profileScore" style="color: var(--secondary); font-size: 1.2rem;"></p>
+        
+        <hr style="border: 1px solid var(--bg-darker); margin: 20px 0;">
+        <h3 style="color: var(--text-light); text-align: center;">🏆 Top 5 Favorites 🏆</h3>
+
+        <div class="character-grid" id="favoritesGrid" style="display: flex; justify-content: center; flex-wrap: wrap; gap: 15px; margin-top: 20px;"></div>
+
+        <hr style="border: 1px solid var(--bg-darker); margin: 30px 0;">
+
+        <details style="background: var(--bg-darker); padding: 15px; border-radius: 10px; border: 1px solid var(--primary);">
+            <summary style="color: var(--text-light); font-weight: bold; cursor: pointer; font-size: 1.2rem; outline: none;">
+                View All Guessed Characters (<span id="totalGuessedCount">0</span>)
+            </summary>
+            
+            <div class="character-grid" id="guessedGrid" style="margin-top: 20px;"></div>
+            
+            <div style="display: flex; justify-content: center; gap: 15px; margin-top: 20px; align-items: center;">
+                <button id="prevBtn" onclick="changePage(-1)" style="padding: 5px 15px; background: var(--bg-card-hover);">Previous</button>
+                <span id="pageInfo" style="color: var(--text-muted);">Page 1</span>
+                <button id="nextBtn" onclick="changePage(1)" style="padding: 5px 15px; background: var(--bg-card-hover);">Next</button>
+            </div>
+        </details>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="app.js"></script>
+
+    <script>
+
+        let currentPage = 1;
+        let currentUsername = "";
+
+        async function loadProfile() {
+            const urlParams = new URLSearchParams(window.location.search);
+            currentUsername = urlParams.get('user');
+
+            if (!currentUsername) return document.getElementById('profileName').innerText = "User not found";
+
+            // Load Main Profile & Favorites
+            const res = await fetchWithAuth(`/api/leaderboard/profile/${currentUsername}`);
+            if (!res.ok) return document.getElementById('profileName').innerText = "User not found";
+
+            const user = await res.json();
+            document.getElementById('profileName').innerText = `${user.username}'s Profile`;
+            document.getElementById('profileScore').innerText = `Total Guesses: ${user.score}`;
+
+            // Render Favorites
+            const favGrid = document.getElementById('favoritesGrid');
+            favGrid.innerHTML = '';
+            if (user.favorites.length === 0) {
+                favGrid.innerHTML = '<p style="color: var(--text-dim);">No favorites selected yet.</p>';
+            } else {
+                user.favorites.forEach(char => favGrid.appendChild(createCharacterCard(char, true)));
+            }
+
+            // Load first page of guessed characters
+            loadGuessedCharacters(currentPage);
+        }
+
+
+        async function loadGuessedCharacters(page) {
+            const res = await fetchWithAuth(`/api/leaderboard/profile/${currentUsername}/guessed?page=${page}`);
+            const data = await res.json();
+
+            document.getElementById('totalGuessedCount').innerText = data.totalCharacters;
+            document.getElementById('pageInfo').innerText = `Page ${data.currentPage} of ${data.totalPages || 1}`;
+
+            const grid = document.getElementById('guessedGrid');
+            grid.innerHTML = '';
+            
+            if (data.characters.length === 0) {
+                grid.innerHTML = '<p style="grid-column: 1 / -1; text-align: center;">No characters guessed yet.</p>';
+            } else {
+                data.characters.forEach(char => grid.appendChild(createCharacterCard(char, false)));
+            }
+
+            // Handle button states
+            document.getElementById('prevBtn').disabled = data.currentPage <= 1;
+            document.getElementById('nextBtn').disabled = data.currentPage >= data.totalPages;
+            
+            // Dim disabled buttons
+            document.getElementById('prevBtn').style.opacity = data.currentPage <= 1 ? "0.5" : "1";
+            document.getElementById('nextBtn').style.opacity = data.currentPage >= data.totalPages ? "0.5" : "1";
+        }
+
+        function changePage(direction) {
+            currentPage += direction;
+            loadGuessedCharacters(currentPage);
+        }
+
+        function createCharacterCard(char, isShowcase) {
+            const card = document.createElement('div');
+            card.className = 'character-card';
+            if (isShowcase) card.style.width = '140px';
+            
+            // CRITICAL CHANGE: We now use /api/image/${char._id} instead of imageBase64
+            card.innerHTML = `
+                <a href="character.html?id=${char._id}" style="text-decoration: none; color: inherit; display: block;">
+                    <img src="/api/image/${char._id}" alt="${char.name}">
+                    <p><strong>${char.name}</strong></p>
+                    <p style="font-size: 0.75rem; color: var(--text-dim);">${char.title}</p>
+                </a>
+            `;
+            return card;
+        }
+
+        window.onload = loadProfile;
+    </script>
+</body>
+</html>

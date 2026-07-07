@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Leaderboard - Character Guesser</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="logo.svg">
+    <link rel="stylesheet" href="style.css">
+    <script>
+        // Prevent screen flash by applying theme instantly
+        (function() {
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+        })();
+    </script>
+</head>
+<body>
+    <nav>
+        <div class="brand">
+    <a href="index.html">
+        <img src="logo.svg" alt="CG Logo" class="nav-logo">
+        <strong>Character Guesser</strong>
+    </a>
+</div>
+        <div class="nav-links"><a href="index.html">Play</a></div>
+    </nav>
+
+    <div class="table-container">
+        <h2 style="text-align: center; color: var(--primary);">Global Leaderboard</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Rank</th>
+                    <th>Username</th>
+                    <th>Guessed</th>
+                </tr>
+            </thead>
+            <tbody id="leaderboardBody">
+                <!-- Data injected via JS -->
+            </tbody>
+        </table>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="app.js"></script>
+    <script>
+        async function loadLeaderboard() {
+            const res = await fetchWithAuth('/api/leaderboard');
+            const users = await res.json();
+            const tbody = document.getElementById('leaderboardBody');
+            
+            users.forEach((user, index) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>#${index + 1}</td>
+                    <td><a href="profile.html?user=${user.username}">${user.username}</a></td>
+                    <td>${user.score}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+        loadLeaderboard();
+    </script>
+</body>
+</html>

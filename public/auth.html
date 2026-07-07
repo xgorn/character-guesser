@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Login - Character Guesser</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="logo.svg">
+    <link rel="stylesheet" href="style.css">
+    <script>
+        // Prevent screen flash by applying theme instantly
+        (function() {
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+        })();
+    </script>
+</head>
+<body>
+    <nav>
+        <div class="brand">
+    <a href="index.html">
+        <img src="logo.svg" alt="CG Logo" class="nav-logo">
+        <strong>Character Guesser</strong>
+    </a>
+</div>
+        <div class="nav-links"><a href="leaderboard.html">Leaderboard</a></div>
+    </nav>
+
+    <div class="game-container" style="margin-top: 80px;">
+        <h2 id="formTitle">Login</h2>
+        <form id="authForm" onsubmit="handleAuth(event)">
+            <div class="form-group">
+                <label>Username</label>
+                <input type="text" id="username" required>
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="password" required>
+            </div>
+            <button type="submit" id="submitBtn">Login</button>
+        </form>
+        <p style="margin-top: 15px;">
+            <a href="#" onclick="toggleMode()" style="color: var(--primary-light);">Switch to Register</a>
+        </p>
+        <p id="authMessage"></p>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="app.js"></script>
+
+    <script>
+
+        let isLogin = true;
+
+        function toggleMode() {
+            isLogin = !isLogin;
+            document.getElementById('formTitle').innerText = isLogin ? 'Login' : 'Register';
+            document.getElementById('submitBtn').innerText = isLogin ? 'Login' : 'Register';
+        }
+
+        async function handleAuth(e) {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
+
+            const res = await fetchWithAuth(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+            const data = await res.json();
+
+            if (res.ok) {
+                if (isLogin) {
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('refreshToken', data.refreshToken);
+                    localStorage.setItem('username', data.username);
+                    localStorage.setItem('isAdmin', data.isAdmin);
+                    window.location.href = 'index.html';
+                } else {
+                    document.getElementById('authMessage').style.color = 'var(--success)';
+                    document.getElementById('authMessage').innerText = 'Registered! Please login.';
+                    toggleMode();
+                }
+            } else {
+                document.getElementById('authMessage').style.color = 'var(--danger)';
+                document.getElementById('authMessage').innerText = data.message;
+            }
+        }
+    </script>
+</body>
+</html>

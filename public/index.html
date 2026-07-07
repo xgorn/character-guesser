@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Character Guesser</title>
+    <link rel="icon" type="image/svg+xml" href="logo.svg">
+    <link rel="stylesheet" href="style.css">
+    <script>
+        // Prevent screen flash by applying theme instantly
+        (function() {
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+        })();
+    </script>
+</head>
+<body>
+    <nav>
+        <div class="brand">
+    <a href="index.html">
+        <img src="logo.svg" alt="CG Logo" class="nav-logo">
+        <strong>Character Guesser</strong>
+    </a>
+</div>
+        <div class="nav-links" id="navLinks">
+            <a href="leaderboard.html">Leaderboard</a>
+            <a href="auth.html" id="loginLink">Login</a>
+        </div>
+    </nav>
+
+    <!-- Global Announcement Banner -->
+    <div id="announcementBanner" class="announcement-banner hidden"></div>
+
+    <div class="game-container">
+        
+        <div id="roomSelector">
+            <h2>Select Category</h2>
+            <button onclick="joinRoom('waifu')" style="background: var(--accent); margin: 10px;">Play Waifu</button>
+            <button onclick="joinRoom('husbu')" style="background: var(--primary); margin: 10px;">Play Husbu</button>
+        </div>
+
+        <div id="gameArea" style="display: none;">
+            <h1 id="roomTitle">Character Guesser</h1>
+            <div id="timer">05:00</div>
+            
+            <canvas id="characterCanvas"></canvas>
+            
+            <div>
+                <input type="text" id="guessInput" placeholder="Who is this character?">
+                <button id="guessBtn" onclick="submitGuess()">Guess!</button>
+            </div>
+            <p id="message"></p>
+            <button onclick="leaveRoom()" style="margin-top: 20px; background: var(--bg-darker);">Back to Menu</button>
+        </div>
+    </div>
+
+    <!-- Socket.io client script automatically served by backend -->
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

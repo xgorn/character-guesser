@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Search - Character Guesser</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="logo.svg"> 
+    <link rel="stylesheet" href="style.css">
+    <script>
+        // Prevent screen flash by applying theme instantly
+        (function() {
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+        })();
+    </script>
+</head>
+<body>
+    <nav>
+        <div class="brand">
+            <a href="index.html">
+                <img src="logo.svg" alt="CG Logo" class="nav-logo">
+                <strong>Character Guesser</strong>
+            </a>
+        </div>
+        <div class="nav-links" id="navLinks">
+            <a href="index.html">Play</a>
+            <a href="leaderboard.html">Leaderboard</a>
+        </div>
+    </nav>
+
+    <div class="game-container" style="margin-top: 80px; max-width: 800px;">
+        <h2>Global Character Search</h2>
+        
+        <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+            <input type="text" id="searchInput" placeholder="Search by name, alt name, or anime/game..." 
+                   style="flex-grow: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--primary); background: var(--bg-darker); color: var(--text-light); outline: none;">
+            <button onclick="performSearch()">Search</button>
+        </div>
+
+        <p id="searchStatus" style="color: var(--text-dim); text-align: left;"></p>
+        
+        <div class="character-grid" id="searchGrid">
+            </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="app.js"></script>
+    <script>
+
+        // Allow pressing "Enter" to search
+        document.getElementById('searchInput').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') performSearch();
+        });
+
+        async function performSearch() {
+            const query = document.getElementById('searchInput').value.trim();
+            const statusEl = document.getElementById('searchStatus');
+            const grid = document.getElementById('searchGrid');
+            
+            if (!query) return;
+
+            statusEl.innerText = "Searching...";
+            grid.innerHTML = "";
+
+            const res = await fetchWithAuth(`/api/character/search?q=${encodeURIComponent(query)}`);
+            const characters = await res.json();
+
+            if (characters.length === 0) {
+                statusEl.innerText = "No characters found matching your query.";
+                return;
+            }
+
+            statusEl.innerText = `Found ${characters.length} character(s).`;
+
+            characters.forEach(char => {
+                const card = document.createElement('div');
+                card.className = 'character-card';
+                // Using the optimized image route
+                card.innerHTML = `
+                    <a href="character.html?id=${char._id}" style="text-decoration: none; color: inherit; display: block;">
+                        <img src="/api/image/${char._id}" alt="${char.name}" style="aspect-ratio: 1/1; object-fit: cover;">
+                        <p><strong>${char.name}</strong></p>
+                        <p style="font-size: 0.75rem; color: var(--text-dim);">${char.title}</p>
+                    </a>
+                `;
+                grid.appendChild(card);
+            });
+        }
+    </script>
+</body>
+</html>
