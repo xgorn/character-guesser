@@ -1,5 +1,5 @@
 # Use a lightweight Node.js image
-FROM node:18-alpine
+FROM node:20-alpine
 
 # Set the working directory inside the container
 WORKDIR /app
@@ -12,7 +12,7 @@ RUN npm install
 COPY . .
 
 # Expose the port the app runs on
-EXPOSE 80
+EXPOSE 3000
 
 # Command to start the application
 CMD ["node", "server.js"]
