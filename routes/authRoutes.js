@@ -31,11 +31,11 @@ router.post('/login', async (req, res) => {
             return res.status(401).json({ message: "Invalid credentials" });
         }
 
-        // 1. Create a short-lived Access Token (15 minutes)
-        const accessToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '15m' });
+        // 1. Create a short-lived Access Token (7 days)
+        const accessToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
         
-        // 2. Create a long-lived Refresh Token (7 days)
-        const refreshToken = jwt.sign({ id: user._id }, process.env.REFRESH_SECRET, { expiresIn: '7d' });
+        // 2. Create a long-lived Refresh Token (30 days)
+        const refreshToken = jwt.sign({ id: user._id }, process.env.REFRESH_SECRET, { expiresIn: '30d' });
 
         res.status(200).json({ 
             token: accessToken, 
@@ -63,7 +63,7 @@ router.post('/refresh', (req, res) => {
         }
 
         // If valid, issue a brand new Access Token
-        const newAccessToken = jwt.sign({ id: decoded.id }, process.env.JWT_SECRET, { expiresIn: '15m' });
+        const newAccessToken = jwt.sign({ id: decoded.id }, process.env.JWT_SECRET, { expiresIn: '7d' });
         
         res.status(200).json({ token: newAccessToken });
     });

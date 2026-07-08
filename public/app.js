@@ -137,9 +137,12 @@ socket.on('new_character', (data) => {
     const ctx = canvas.getContext('2d');
     const img = new Image();
     
-    img.src = data.imageUrl + "?t=" + new Date().getTime();
+    // 1. Let the browser cache the image for instant loading!
+    img.src = data.imageUrl; 
+    
     img.onload = () => {
-        const FIXED_WIDTH = 2500;
+        // 2. Use a smaller internal resolution so phones/weak PCs don't lag
+        const FIXED_WIDTH = 800; 
         const aspectRatio = img.naturalHeight / img.naturalWidth;
         canvas.width = FIXED_WIDTH;
         canvas.height = FIXED_WIDTH * aspectRatio;
