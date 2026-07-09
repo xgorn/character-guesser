@@ -59,21 +59,60 @@ const gameState = {
 const TIME_LIMIT = 5 * 60 * 1000; 
 
 async function selectNewCharacter(category) {
-    const count = await Character.countDocuments({ category });
-    if (count === 0) return console.log(`No ${category}s in DB!`); 
+    const state = gameState[category];
 
-    const random = Math.floor(Math.random() * count);
-    gameState[category].current = await Character.findOne({ category }).skip(random);
-    gameState[category].startTime = Date.now(); 
+    // 1. CLEAR PREVIOUS TIMERS (So hints don't overlap if a game ends early)
+    clearTimeout(state.hint1Timeout);
+    clearTimeout(state.hint2Timeout);
+    clearTimeout(state.roundTimeout);
 
-    // Emit ONLY to the specific room (Waifu room OR Husbu room)
-    io.to(category).emit('new_character', {
-        imageUrl: `/api/image/${gameState[category].current._id}`, 
-        startTime: gameState[category].startTime,
-        duration: TIME_LIMIT
-    });
+    try {
+        const count = await Character.countDocuments({ category });
+        if (count === 0) return;
 
-    startTimer(category);
+        const random = Math.floor(Math.random() * count);
+        const character = await Character.findOne({ category }).skip(random);
+        
+        state.current = character;
+
+        // --- FIX: Save the start time to the server's state! ---
+        state.startTime = Date.now();
+
+        // 2. Generate the dashed name hint
+        const nameHint = generateNameHint(character.name);
+
+        // 3. Emit the new character (60 seconds duration)
+        io.to(category).emit('new_character', {
+            imageUrl: `/api/image/${character._id}`,
+            startTime: state.startTime,
+            duration: 60000 // 60 seconds
+        });
+
+        // 4. TRIGGER HINT 1 (At 15 seconds)
+        state.hint1Timeout = setTimeout(() => {
+            io.to(category).emit('show_hint', { 
+                type: 'name', 
+                text: `Hint: ${nameHint}` 
+            });
+        }, 15000); 
+
+        // 5. TRIGGER HINT 2 (At 30 seconds)
+        state.hint2Timeout = setTimeout(() => {
+            io.to(category).emit('show_hint', { 
+                type: 'title', 
+                text: character.title
+            });
+        }, 30000);
+
+        // 6. END ROUND (At 60 seconds)
+        state.roundTimeout = setTimeout(() => {
+            io.to(category).emit('time_up', { characterName: character.name });
+            selectNewCharacter(category);
+        }, 60000);
+
+    } catch (error) {
+        console.error("Error selecting character:", error);
+    }
 }
 
 function startTimer(category) {
@@ -83,6 +122,19 @@ function startTimer(category) {
         selectNewCharacter(category);
     }, TIME_LIMIT);
 }
+
+
+// --- HINT GENERATOR ---
+function generateNameHint(fullName) {
+    return fullName.split(' ').map(word => {
+        // If it's a single letter (like "L" or "N"), just return the letter
+        if (word.length <= 1) return word;
+        
+        // Return the first letter + dashes for the rest of the word
+        return word[0] + '-'.repeat(word.length - 1);
+    }).join(' ');
+}
+
 
 // --- SOCKET.IO ---
 io.on('connection', (socket) => {
@@ -96,12 +148,30 @@ io.on('connection', (socket) => {
         
         // Send current state for that specific room
         const state = gameState[category];
+        
         if (state.current && state.startTime) {
-            socket.emit('new_character', {
-                imageUrl: `/api/image/${state.current._id}`,
-                startTime: state.startTime,
-                duration: TIME_LIMIT
-            });
+            const timeElapsed = Date.now() - state.startTime;
+            
+            // Only send if the 60-second round is still active
+            if (timeElapsed < 60000) {
+                // 1. Send the image and sync the timer
+                socket.emit('new_character', {
+                    imageUrl: `/api/image/${state.current._id}`,
+                    startTime: state.startTime,
+                    duration: 60000 // FIX: Was previously using TIME_LIMIT (5 mins)
+                });
+
+                // 2. Sync Hint 1 if they joined after 15 seconds
+                if (timeElapsed >= 15000) {
+                    const nameHint = generateNameHint(state.current.name);
+                    socket.emit('show_hint', { type: 'name', text: nameHint });
+                }
+
+                // 3. Sync Hint 2 if they joined after 30 seconds
+                if (timeElapsed >= 30000) {
+                    socket.emit('show_hint', { type: 'title', text: state.current.title });
+                }
+            }
         }
     });
 
@@ -146,6 +216,12 @@ io.on('connection', (socket) => {
             altWords.includes(cleanGuess);         // Matches a single word in the alt name
 
         if (isMatch) {
+
+            // STOP ALL TIMERS FOR THIS ROUND
+            clearTimeout(state.hint1Timeout);
+            clearTimeout(state.hint2Timeout);
+            clearTimeout(state.roundTimeout);
+
             await User.findOneAndUpdate(
                 { username: username },
                 { $inc: { score: 1 }, $addToSet: { guessedCharacters: state.current._id } }

@@ -41,7 +41,7 @@
 
         <div id="gameArea" style="display: none;">
             <h1 id="roomTitle">Character Guesser</h1>
-            <div id="timer">05:00</div>
+            <div id="timer">01:00</div>
             
             <canvas id="characterCanvas"></canvas>
             
@@ -50,6 +50,7 @@
                 <button id="guessBtn" onclick="submitGuess()">Guess!</button>
             </div>
             <p id="message"></p>
+            <div id="hintDisplay" style="color: var(--accent); font-weight: bold; font-size: 1.1rem; margin: 10px 0; min-height: 50px; text-align: center;"></div>
             <button onclick="leaveRoom()" style="margin-top: 20px; background: var(--bg-darker);">Back to Menu</button>
         </div>
     </div>

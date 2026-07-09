@@ -132,6 +132,9 @@ function logout() {
 socket.on('new_character', (data) => {
     document.getElementById('message').innerText = "";
     document.getElementById('guessInput').value = "";
+
+    // Clear the old hints!
+    document.getElementById('hintDisplay').innerText = "";
     
     const canvas = document.getElementById('characterCanvas');
     const ctx = canvas.getContext('2d');
@@ -153,6 +156,21 @@ socket.on('new_character', (data) => {
 
     startFrontendTimer(data.startTime, data.duration);
 });
+
+
+// NEW: Listen for hints from the server
+socket.on('show_hint', (data) => {
+    const hintEl = document.getElementById('hintDisplay');
+    
+    if (data.type === 'name') {
+        // Shows: "Hint: S----- H-----"
+        hintEl.innerText = data.text; 
+    } else if (data.type === 'title') {
+        // Appends the title to the next line
+        hintEl.innerText += `\n${data.text}`; 
+    }
+});
+
 
 socket.on('correct_guess', (data) => {
     const banner = document.getElementById('announcementBanner');
