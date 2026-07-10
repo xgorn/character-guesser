@@ -51,10 +51,10 @@ app.get('/api/image/:id', async (req, res) => {
     }
 });
 
-// --- DUAL GAME STATE (Waifu & Husbu) ---
+// --- DUAL GAME STATE (Female & Male) ---
 const gameState = {
-    waifu: { current: null, timer: null, startTime: null },
-    husbu: { current: null, timer: null, startTime: null }
+    female: { current: null, timer: null, startTime: null },
+    male: { current: null, timer: null, startTime: null }
 };
 const TIME_LIMIT = 5 * 60 * 1000; 
 
@@ -142,8 +142,8 @@ io.on('connection', (socket) => {
     // User selects which room to join
     socket.on('join_room', (category) => {
         // Leave old rooms to prevent cross-contamination
-        socket.leave('waifu');
-        socket.leave('husbu');
+        socket.leave('female');
+        socket.leave('male');
         socket.join(category);
         
         // Send current state for that specific room
@@ -241,7 +241,7 @@ io.on('connection', (socket) => {
 
 mongoose.connect(process.env.MONGO_URI).then(() => {
     console.log('Database connected');
-    selectNewCharacter('waifu'); 
-    selectNewCharacter('husbu'); 
+    selectNewCharacter('female'); 
+    selectNewCharacter('male'); 
     server.listen(process.env.PORT || 3000, () => console.log(`Character Guesser running`));
 });

@@ -110,8 +110,8 @@ function joinRoom(category) {
     document.getElementById('roomSelector').style.display = 'none';
     document.getElementById('gameArea').style.display = 'block';
     
-    document.getElementById('roomTitle').innerText = category === 'waifu' ? "Waifu Guesser" : "Husbu Guesser";
-    document.getElementById('roomTitle').style.color = category === 'waifu' ? "var(--accent)" : "var(--primary)";
+    document.getElementById('roomTitle').innerText = category === 'female' ? "Female Guesser" : "Male Guesser";
+    document.getElementById('roomTitle').style.color = category === 'female' ? "var(--accent)" : "var(--primary)";
     
     socket.emit('join_room', category);
 }

@@ -4,7 +4,7 @@ const characterSchema = new mongoose.Schema({
     name: { type: String, required: true },
     alternativeName: { type: String },
     title: { type: String, required: true },
-    category: { type: String, enum: ['waifu', 'husbu'], required: true }, // NEW
+    category: { type: String, enum: ['female', 'male'], required: true }, // NEW
     imageBase64: { type: String, required: true } // NEW
 });
 
